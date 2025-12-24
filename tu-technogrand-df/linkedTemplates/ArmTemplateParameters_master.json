@@ -1,0 +1,66 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "tu-technogrand-df"
+		},
+		"Azure SQL DB_password": {
+			"value": ""
+		},
+		"LS_azuresql_DB_password": {
+			"value": ""
+		},
+		"ls_adls_accountKey": {
+			"value": ""
+		},
+		"ls_adls_1_accountKey": {
+			"value": ""
+		},
+		"ls_adls_storage_accountKey": {
+			"value": ""
+		},
+		"Azure SQL DB_properties_typeProperties_server": {
+			"value": "tu-technogrand-sql-ser.database.windows.net"
+		},
+		"Azure SQL DB_properties_typeProperties_database": {
+			"value": "tu-technogrand-db"
+		},
+		"Azure SQL DB_properties_typeProperties_userName": {
+			"value": "tu-technogrand-sql-ser"
+		},
+		"LS_azuresql_DB_properties_typeProperties_server": {
+			"value": "tu-technogrand-sql-ser.database.windows.net"
+		},
+		"LS_azuresql_DB_properties_typeProperties_database": {
+			"value": "tu-technogrand-db"
+		},
+		"LS_azuresql_DB_properties_typeProperties_userName": {
+			"value": "tu-technogrand-sql-ser"
+		},
+		"ls_adls_properties_typeProperties_url": {
+			"value": "https://tutechnograndsa.dfs.core.windows.net/"
+		},
+		"ls_adls_1_properties_typeProperties_url": {
+			"value": "https://tutechnograndsa.dfs.core.windows.net/"
+		},
+		"ls_adls_storage_properties_typeProperties_url": {
+			"value": "https://tutechnograndsa.dfs.core.windows.net/"
+		},
+		"tr_event_properties_typeProperties_scope": {
+			"value": "/subscriptions/054f374e-b386-4ce4-9d57-6152ca4d9d9b/resourceGroups/tu-technogrand-dev/providers/Microsoft.Storage/storageAccounts/tutechnograndsa"
+		},
+		"tr_sched_properties_copydata_parameters_folder": {
+			"value": "raw"
+		},
+		"tr_tw2_properties_pipeline_parameters_folder": {
+			"value": "raw"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}

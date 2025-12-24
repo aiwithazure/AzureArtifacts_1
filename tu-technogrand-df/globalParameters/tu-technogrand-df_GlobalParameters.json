@@ -1,0 +1,6 @@
+{
+	"wait_gbl": {
+		"type": "int",
+		"value": 2
+	}
+}

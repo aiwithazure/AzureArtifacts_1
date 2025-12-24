@@ -1,0 +1,201 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "tu-technogrand-df"
+		},
+		"Azure SQL DB_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'Azure SQL DB'"
+		},
+		"LS_azuresql_DB_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_azuresql_DB'"
+		},
+		"ls_adls_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ls_adls'"
+		},
+		"ls_adls_1_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ls_adls_1'"
+		},
+		"ls_adls_storage_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ls_adls_storage'"
+		},
+		"Azure SQL DB_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "tu-technogrand-sql-ser.database.windows.net"
+		},
+		"Azure SQL DB_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "tu-technogrand-db"
+		},
+		"Azure SQL DB_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "tu-technogrand-sql-ser"
+		},
+		"LS_azuresql_DB_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "tu-technogrand-sql-ser.database.windows.net"
+		},
+		"LS_azuresql_DB_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "tu-technogrand-db"
+		},
+		"LS_azuresql_DB_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "tu-technogrand-sql-ser"
+		},
+		"ls_adls_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://tutechnograndsa.dfs.core.windows.net/"
+		},
+		"ls_adls_1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://tutechnograndsa.dfs.core.windows.net/"
+		},
+		"ls_adls_storage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://tutechnograndsa.dfs.core.windows.net/"
+		},
+		"tr_event_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/054f374e-b386-4ce4-9d57-6152ca4d9d9b/resourceGroups/tu-technogrand-dev/providers/Microsoft.Storage/storageAccounts/tutechnograndsa"
+		},
+		"tr_sched_properties_copydata_parameters_folder": {
+			"type": "string",
+			"defaultValue": "raw"
+		},
+		"tr_tw2_properties_pipeline_parameters_folder": {
+			"type": "string",
+			"defaultValue": "raw"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "tu-technogrand-df_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"Azure SQL DB_password": {
+						"value": "[parameters('Azure SQL DB_password')]"
+					},
+					"LS_azuresql_DB_password": {
+						"value": "[parameters('LS_azuresql_DB_password')]"
+					},
+					"ls_adls_accountKey": {
+						"value": "[parameters('ls_adls_accountKey')]"
+					},
+					"ls_adls_1_accountKey": {
+						"value": "[parameters('ls_adls_1_accountKey')]"
+					},
+					"ls_adls_storage_accountKey": {
+						"value": "[parameters('ls_adls_storage_accountKey')]"
+					},
+					"Azure SQL DB_properties_typeProperties_server": {
+						"value": "[parameters('Azure SQL DB_properties_typeProperties_server')]"
+					},
+					"Azure SQL DB_properties_typeProperties_database": {
+						"value": "[parameters('Azure SQL DB_properties_typeProperties_database')]"
+					},
+					"Azure SQL DB_properties_typeProperties_userName": {
+						"value": "[parameters('Azure SQL DB_properties_typeProperties_userName')]"
+					},
+					"LS_azuresql_DB_properties_typeProperties_server": {
+						"value": "[parameters('LS_azuresql_DB_properties_typeProperties_server')]"
+					},
+					"LS_azuresql_DB_properties_typeProperties_database": {
+						"value": "[parameters('LS_azuresql_DB_properties_typeProperties_database')]"
+					},
+					"LS_azuresql_DB_properties_typeProperties_userName": {
+						"value": "[parameters('LS_azuresql_DB_properties_typeProperties_userName')]"
+					},
+					"ls_adls_properties_typeProperties_url": {
+						"value": "[parameters('ls_adls_properties_typeProperties_url')]"
+					},
+					"ls_adls_1_properties_typeProperties_url": {
+						"value": "[parameters('ls_adls_1_properties_typeProperties_url')]"
+					},
+					"ls_adls_storage_properties_typeProperties_url": {
+						"value": "[parameters('ls_adls_storage_properties_typeProperties_url')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "tu-technogrand-df_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'tu-technogrand-df_ArmTemplate_0')]"
+			]
+		},
+		{
+			"name": "tu-technogrand-df_ArmTemplate_2",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_2.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"tr_event_properties_typeProperties_scope": {
+						"value": "[parameters('tr_event_properties_typeProperties_scope')]"
+					},
+					"tr_sched_properties_copydata_parameters_folder": {
+						"value": "[parameters('tr_sched_properties_copydata_parameters_folder')]"
+					},
+					"tr_tw2_properties_pipeline_parameters_folder": {
+						"value": "[parameters('tr_tw2_properties_pipeline_parameters_folder')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'tu-technogrand-df_ArmTemplate_1')]"
+			]
+		}
+	]
+}

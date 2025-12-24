@@ -1,0 +1,663 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "tu-technogrand-df"
+		},
+		"tr_event_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/054f374e-b386-4ce4-9d57-6152ca4d9d9b/resourceGroups/tu-technogrand-dev/providers/Microsoft.Storage/storageAccounts/tutechnograndsa"
+		},
+		"tr_sched_properties_copydata_parameters_folder": {
+			"type": "string",
+			"defaultValue": "raw"
+		},
+		"tr_tw2_properties_pipeline_parameters_folder": {
+			"type": "string",
+			"defaultValue": "raw"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_event')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "web",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/tu-technogrand-cont/blobs/transactions",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('tr_event_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_tw1')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipeline": {
+					"pipelineReference": {
+						"referenceName": "web",
+						"type": "PipelineReference"
+					},
+					"parameters": {}
+				},
+				"type": "TumblingWindowTrigger",
+				"typeProperties": {
+					"frequency": "Minute",
+					"interval": 5,
+					"startTime": "2025-12-18T03:40:00Z",
+					"delay": "00:00:00",
+					"maxConcurrency": 5,
+					"retryPolicy": {
+						"count": 5,
+						"intervalInSeconds": 60
+					},
+					"dependsOn": []
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_main_processing')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "control table extraction",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "select * from [ANALYTICS_SCHEMA].[CONTROL_TABLE] where start_run='Y'",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "db_table",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": {
+										"value": "ANALYTICS_SCHEMA",
+										"type": "Expression"
+									},
+									"table": {
+										"value": "CONTROL_TABLE",
+										"type": "Expression"
+									}
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "main process id",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "control table extraction",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "main_process_id",
+							"value": {
+								"value": "@guid()",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "main process start time",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "control table extraction",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "main_process_start_time",
+							"value": {
+								"value": "@utcNow()",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "main process id",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "main process start time",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('control table extraction').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"batchCount": 1,
+							"activities": [
+								{
+									"name": "target table",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "target_table",
+										"value": {
+											"value": "@item().TARGET_TABLE",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "watermark_start val",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "target table",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "watermark_start_val",
+										"value": {
+											"value": "@item().WATERMARK_VALUE",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "soruce table",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "watermark_col_name",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "source_table",
+										"value": {
+											"value": "@item().SOURCE_TABLE",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "email",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "soruce table",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "email",
+										"value": {
+											"value": "@item().EMAIL_ID",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "SP source",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "email",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "source_sp",
+										"value": {
+											"value": "@item().SOURCE_SP",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "SP target",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "SP source",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "target_sp",
+										"value": {
+											"value": "@item().TARGET_SP",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "Execute sub loading",
+									"type": "ExecutePipeline",
+									"dependsOn": [
+										{
+											"activity": "SP target",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "PL_sub_loading",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"main_process_id": {
+												"value": "@variables('main_process_id')",
+												"type": "Expression"
+											},
+											"main_process_start_time": {
+												"value": "@variables('main_process_start_time')",
+												"type": "Expression"
+											},
+											"table_name": {
+												"value": "@variables('source_table')",
+												"type": "Expression"
+											},
+											"target_table": {
+												"value": "@variables('target_table')",
+												"type": "Expression"
+											},
+											"watermark_start_val": {
+												"value": "@variables('watermark_start_val')",
+												"type": "Expression"
+											},
+											"sp_source": {
+												"value": "@variables('source_sp')",
+												"type": "Expression"
+											},
+											"sp_merge": {
+												"value": "@variables('target_sp')",
+												"type": "Expression"
+											},
+											"watermark_col_name": {
+												"value": "@variables('watermark_col_name')",
+												"type": "Expression"
+											}
+										}
+									}
+								},
+								{
+									"name": "watermark_col_name",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "watermark_start val",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "watermark_col_name",
+										"value": {
+											"value": "@item().watermark_column",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Lookup error count",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "ForEach1",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "@concat('select * from ANALYTICS_SCHEMA.LOG_TABLE where main_process_id=''',variables('main_process_id'),'''',' and sub_process_result = ''FAILED''')",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "db_table",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": {
+										"value": "ANALYTICS_SCHEMA",
+										"type": "Expression"
+									},
+									"table": {
+										"value": "LOG_TABLE",
+										"type": "Expression"
+									}
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "logic app wk email",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Lookup error count",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {},
+							"url": {
+								"value": "https://prod-72.eastus.logic.azure.com:443/workflows/706a7f84de8a4868a2dd7bfbe39865ab/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=n-YJwMc3RXjdT63vRy-TihqeKq520uvqgrXD9oQgRWc",
+								"type": "Expression"
+							},
+							"body": {
+								"value": "@activity('Lookup error count').output.value",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"main_process_id": {
+						"type": "String"
+					},
+					"main_process_start_time": {
+						"type": "String"
+					},
+					"watermark_start_val": {
+						"type": "String"
+					},
+					"source_table": {
+						"type": "String"
+					},
+					"target_table": {
+						"type": "String"
+					},
+					"source_sp": {
+						"type": "String"
+					},
+					"target_sp": {
+						"type": "String"
+					},
+					"email": {
+						"type": "String"
+					},
+					"watermark_col_name": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "Ingestion gramework"
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-12-11T14:37:43Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dummy_to_copy')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Execute Pipeline1",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "copydata",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"folder": {
+									"value": "@pipeline().parameters.folder",
+									"type": "Expression"
+								}
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"folder": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "practice"
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-12-15T06:36:58Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_sched')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "copydata",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"folder": "[parameters('tr_sched_properties_copydata_parameters_folder')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Minute",
+						"interval": 5,
+						"startTime": "2025-12-18T03:25:00",
+						"timeZone": "India Standard Time"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_tw2')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipeline": {
+					"pipelineReference": {
+						"referenceName": "copydata",
+						"type": "PipelineReference"
+					},
+					"parameters": {
+						"folder": "[parameters('tr_tw2_properties_pipeline_parameters_folder')]"
+					}
+				},
+				"type": "TumblingWindowTrigger",
+				"typeProperties": {
+					"frequency": "Minute",
+					"interval": 5,
+					"startTime": "2025-12-18T03:45:00Z",
+					"delay": "00:00:00",
+					"maxConcurrency": 50,
+					"retryPolicy": {
+						"intervalInSeconds": 30
+					},
+					"dependsOn": [
+						{
+							"type": "TumblingWindowTriggerDependencyReference",
+							"size": "0:00:00:00",
+							"offset": "0:00:00:00",
+							"referenceTrigger": {
+								"referenceName": "tr_tw1",
+								"type": "TriggerReference"
+							}
+						}
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/triggers/tr_tw1')]"
+			]
+		}
+	]
+}
