@@ -1,0 +1,552 @@
+{
+	"name": "pl_main_pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup1",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select * from [ANALYTICS_SCHEMA].[CONTROL_TABLE]\nwhere START_RUN='Y'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "db_table",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "ANALYTICS_SCHEMA",
+							"table": {
+								"value": "@pipeline().parameters.table_name",
+								"type": "Expression"
+							}
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "main process time",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup1').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"batchCount": 5,
+					"activities": [
+						{
+							"name": "Execute Pipeline1",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "sub procee start time",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_IF_sub_loading",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"source_schema": {
+										"value": "@variables('source_schema')",
+										"type": "Expression"
+									},
+									"source_table": {
+										"value": "@variables('source_table')",
+										"type": "Expression"
+									},
+									"target_schema": {
+										"value": "@variables('target_schema')",
+										"type": "Expression"
+									},
+									"target_table": {
+										"value": "@concat('stg_',variables('target_table'))",
+										"type": "Expression"
+									},
+									"main_process_id": {
+										"value": "@variables('main_process_id')",
+										"type": "Expression"
+									},
+									"sub_process_id": {
+										"value": "@variables('sub_process_id')",
+										"type": "Expression"
+									},
+									"sub_process_start_time": {
+										"value": "@variables('sub_process_start_time')",
+										"type": "Expression"
+									},
+									"watermark_start_val": {
+										"value": "@variables('watermark_start_val')",
+										"type": "Expression"
+									},
+									"watermark_col_name": {
+										"value": "@variables('watermark_col_name')",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "source_table",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "source_table",
+								"value": {
+									"value": "@item().source_table",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "source_schema",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "source_table",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "source_schema",
+								"value": {
+									"value": "@item().source_schema",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "target_schema",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "source_schema",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "target_schema",
+								"value": {
+									"value": "@item().target_schema",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "target_table",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Set variable2",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "target_table",
+								"value": {
+									"value": "@item().target_table",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Execute Pipeline2",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "Execute Pipeline1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_sub_IF_stg_to_target",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"source_schema": {
+										"value": "@variables('source_schema')",
+										"type": "Expression"
+									},
+									"source_table": {
+										"value": "@variables('source_table')",
+										"type": "Expression"
+									},
+									"target_schema": {
+										"value": "@variables('target_schema')",
+										"type": "Expression"
+									},
+									"target_table": {
+										"value": "@variables('target_table')",
+										"type": "Expression"
+									},
+									"sp_target": {
+										"value": "@variables('sp_target')",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "sp target",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "target_table",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "sp_target",
+								"value": {
+									"value": "@concat(variables('source_schema'),'.',item().TARGET_SP)",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Set variable1",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "sp target",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "sub_process_id",
+								"value": {
+									"value": "@guid()",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "sub procee start time",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Set variable1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "sub_process_start_time",
+								"value": {
+									"value": "@formatDateTime(utcnow(),'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Set variable2",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "water mark col name",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "watermark_start_val",
+								"value": {
+									"value": "@item().WATERMARK_VALUE",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "water mark col name",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "target_schema",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "watermark_col_name",
+								"value": {
+									"value": "@item().WATERMARK_COLUMN",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "main_process_id",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Lookup1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "main_process_id",
+					"value": {
+						"value": "@guid()",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "main process time",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "main_process_id",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "main_process_start_time",
+					"value": {
+						"value": "@utcnow()",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Lookup2",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "ForEach1",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "@concat('select * from ANALYTICS_SCHEMA.LOG_TABLE where main_process_id=''',variables('main_process_id'),'''',' and sub_process_result = ''FAILED''')",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "db_table",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "REPORTING",
+							"table": "abc"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Web1",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Lookup2",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": {
+						"value": "https://prod-05.northcentralus.logic.azure.com:443/workflows/9316f2fcd35047778356575331c6d032/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=0h_fwH44YIVtZGY1eG4NY2uv7Vyq6Lfw_0GKEi1ixB4",
+						"type": "Expression"
+					},
+					"body": {
+						"value": "@activity('Lookup2').output.value",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"table_name": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"source_table": {
+				"type": "String"
+			},
+			"source_schema": {
+				"type": "String"
+			},
+			"target_table": {
+				"type": "String"
+			},
+			"target_schema": {
+				"type": "String"
+			},
+			"sp_target": {
+				"type": "String"
+			},
+			"main_process_id": {
+				"type": "String"
+			},
+			"main_process_start_time": {
+				"type": "String"
+			},
+			"main_process_end_time": {
+				"type": "String"
+			},
+			"sub_process_id": {
+				"type": "String"
+			},
+			"sub_process_start_time": {
+				"type": "String"
+			},
+			"sub_process_end_time": {
+				"type": "String"
+			},
+			"watermark_start_val": {
+				"type": "String"
+			},
+			"watermark_col_name": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "ADF IF"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-12-24T03:50:25Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

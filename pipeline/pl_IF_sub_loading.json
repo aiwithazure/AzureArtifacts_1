@@ -1,0 +1,500 @@
+{
+	"name": "pl_IF_sub_loading",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy data1",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "@concat('SELECT * FROM ',pipeline().parameters.source_schema,'.',pipeline().parameters.source_table,' where ',pipeline().parameters.watermark_col_name, ' between ',pipeline().parameters.watermark_start_val, ' and ',pipeline().parameters.sub_process_start_time)",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": {
+							"value": "@concat('TRUNCATE TABLE ',pipeline().parameters.target_schema,'.',pipeline().parameters.target_table)",
+							"type": "Expression"
+						},
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "db_table",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": {
+								"value": "@pipeline().parameters.source_schema",
+								"type": "Expression"
+							},
+							"table": {
+								"value": "@pipeline().parameters.source_table",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "db_table",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": {
+								"value": "@pipeline().parameters.target_schema",
+								"type": "Expression"
+							},
+							"table": {
+								"value": "@pipeline().parameters.target_table",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "rec count",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "sub_process_end_time",
+					"value": {
+						"value": "@utcnow()",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "rec count",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Copy data1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "rec_count",
+					"value": {
+						"value": "@activity('Copy data1').output.RowsCopied",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Stored procedure1",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Set variable1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[ANALYTICS_SCHEMA].[SP_INSERT_LOG_TABLE]",
+					"storedProcedureParameters": {
+						"LAST_UPDATED_TIME": {
+							"value": {
+								"value": "@utcnow()",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"MAIN_PROCESS_ID": {
+							"value": {
+								"value": "@pipeline().parameters.main_process_id",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"RECORDS_COUNT": {
+							"value": {
+								"value": "@variables('rec_count')",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"SUB_PROCESS_END_TIME": {
+							"value": {
+								"value": "@variables('sub_process_end_time')",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"SUB_PROCESS_ID": {
+							"value": {
+								"value": "@pipeline().parameters.sub_process_id",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"SUB_PROCESS_RESULT": {
+							"value": "SUCCESS",
+							"type": "String"
+						},
+						"SUB_PROCESS_START_TIME": {
+							"value": {
+								"value": "@pipeline().parameters.sub_process_start_time",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Azure SQL DB",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Set variable1_copy1",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "rec count_copy1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "sub_process_end_time",
+					"value": {
+						"value": "@utcnow()",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "rec count_copy1",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Copy data1",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "rec_count",
+					"value": {
+						"value": "@activity('Copy data1').output.RowsCopied",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Stored procedure1_copy1",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Set variable1_copy1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[ANALYTICS_SCHEMA].[SP_INSERT_LOG_TABLE]",
+					"storedProcedureParameters": {
+						"LAST_UPDATED_TIME": {
+							"value": {
+								"value": "@utcnow()",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"MAIN_PROCESS_ID": {
+							"value": {
+								"value": "@pipeline().parameters.main_process_id",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"RECORDS_COUNT": {
+							"value": {
+								"value": "@variables('rec_count')",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"SUB_PROCESS_END_TIME": {
+							"value": {
+								"value": "@variables('sub_process_end_time')",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"SUB_PROCESS_ID": {
+							"value": {
+								"value": "@pipeline().parameters.sub_process_id",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"SUB_PROCESS_RESULT": {
+							"value": "FAILED",
+							"type": "String"
+						},
+						"SUB_PROCESS_START_TIME": {
+							"value": {
+								"value": "@pipeline().parameters.sub_process_start_time",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Azure SQL DB",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Stored procedure2",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Stored procedure1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[ANALYTICS_SCHEMA].[SP_UPD_CONTROL_TABLE]",
+					"storedProcedureParameters": {
+						"LAST_MAIN_PROCESSID": {
+							"value": {
+								"value": "@pipeline().parameters.main_process_id",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"LAST_SUB_PROCESS_RESULT": {
+							"value": "SUCCESS",
+							"type": "String"
+						},
+						"LAST_SUB_PROCESSID": {
+							"value": {
+								"value": "@pipeline().parameters.sub_process_id",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"RUN_STATUS": {
+							"value": "Y",
+							"type": "String"
+						},
+						"SOURCE_TABLE": {
+							"value": {
+								"value": "@pipeline().parameters.source_table",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WATERMARK_VAL": {
+							"value": {
+								"value": "@pipeline().parameters.sub_process_start_time",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Azure SQL DB",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Stored procedure2_copy1",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Stored procedure1_copy1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[ANALYTICS_SCHEMA].[SP_UPD_CONTROL_TABLE]",
+					"storedProcedureParameters": {
+						"LAST_MAIN_PROCESSID": {
+							"value": {
+								"value": "@pipeline().parameters.main_process_id",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"LAST_SUB_PROCESS_RESULT": {
+							"value": "FAILED",
+							"type": "String"
+						},
+						"LAST_SUB_PROCESSID": {
+							"value": {
+								"value": "@pipeline().parameters.sub_process_id",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"RUN_STATUS": {
+							"value": "N",
+							"type": "String"
+						},
+						"SOURCE_TABLE": {
+							"value": {
+								"value": "@pipeline().parameters.source_table",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WATERMARK_VAL": {
+							"value": {
+								"value": "@pipeline().parameters.watermark_start_val",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Azure SQL DB",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"source_schema": {
+				"type": "string"
+			},
+			"source_table": {
+				"type": "string"
+			},
+			"target_schema": {
+				"type": "string"
+			},
+			"target_table": {
+				"type": "string"
+			},
+			"main_process_id": {
+				"type": "string"
+			},
+			"sub_process_id": {
+				"type": "string"
+			},
+			"sub_process_start_time": {
+				"type": "string"
+			},
+			"watermark_start_val": {
+				"type": "string"
+			},
+			"watermark_col_name": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"sub_process_end_time": {
+				"type": "String"
+			},
+			"rec_count": {
+				"type": "Integer"
+			}
+		},
+		"folder": {
+			"name": "ADF IF"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-12-23T04:15:53Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

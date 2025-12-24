@@ -1,0 +1,101 @@
+{
+	"name": "db_table",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Azure SQL DB",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"schema": {
+				"type": "string"
+			},
+			"table": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "SOURCE_TABLE",
+				"type": "varchar"
+			},
+			{
+				"name": "DEST_TABLE",
+				"type": "varchar"
+			},
+			{
+				"name": "SOURCE_PATH",
+				"type": "varchar"
+			},
+			{
+				"name": "TARGET_PATH",
+				"type": "varchar"
+			},
+			{
+				"name": "RUN_STATUS",
+				"type": "varchar"
+			},
+			{
+				"name": "source",
+				"type": "varchar"
+			},
+			{
+				"name": "WATERMARK_COL",
+				"type": "nvarchar"
+			},
+			{
+				"name": "WATERMARK_VAL",
+				"type": "varchar"
+			},
+			{
+				"name": "KEY_COLUMN",
+				"type": "varchar"
+			},
+			{
+				"name": "SOURCE_NAME",
+				"type": "varchar"
+			},
+			{
+				"name": "LOAD_TYPE",
+				"type": "varchar"
+			},
+			{
+				"name": "START_RUN",
+				"type": "varchar"
+			},
+			{
+				"name": "SOURCE_ID",
+				"type": "varchar"
+			},
+			{
+				"name": "CONTAINER",
+				"type": "varchar"
+			},
+			{
+				"name": "LAST_UPDATED_DATE",
+				"type": "datetime2",
+				"scale": 7
+			},
+			{
+				"name": "WATERMARK_WHERE_COND",
+				"type": "varchar"
+			},
+			{
+				"name": "EMAIL_ID",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().schema",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().table",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

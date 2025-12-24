@@ -1,0 +1,40 @@
+{
+	"name": "dummy_to_copy",
+	"properties": {
+		"activities": [
+			{
+				"name": "Execute Pipeline1",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "copydata",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"folder": {
+							"value": "@pipeline().parameters.folder",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"folder": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "practice"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-12-15T06:36:58Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

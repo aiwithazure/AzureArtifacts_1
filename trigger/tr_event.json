@@ -1,0 +1,24 @@
+{
+	"name": "tr_event",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "web",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/tu-technogrand-cont/blobs/transactions",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/054f374e-b386-4ce4-9d57-6152ca4d9d9b/resourceGroups/tu-technogrand-dev/providers/Microsoft.Storage/storageAccounts/tutechnograndsa",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}

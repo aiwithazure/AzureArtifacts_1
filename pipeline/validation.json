@@ -1,0 +1,54 @@
+{
+	"name": "validation",
+	"properties": {
+		"activities": [
+			{
+				"name": "Validation1",
+				"type": "Validation",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "db_table",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "ANALYTICS_SCHEMA",
+							"table": "EmployeeData1"
+						}
+					},
+					"timeout": "0.00:01:00",
+					"sleep": 10
+				}
+			},
+			{
+				"name": "Validation1_copy1",
+				"type": "Validation",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_adls_text",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "job.txt",
+								"type": "Expression"
+							},
+							"folder": "raw"
+						}
+					},
+					"timeout": "0.00:01:00",
+					"sleep": 10
+				}
+			}
+		],
+		"folder": {
+			"name": "practice"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-12-15T05:13:43Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

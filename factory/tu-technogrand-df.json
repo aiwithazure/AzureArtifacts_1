@@ -1,0 +1,17 @@
+{
+	"name": "tu-technogrand-df",
+	"properties": {
+		"globalParameters": {
+			"wait_gbl": {
+				"type": "int",
+				"value": 2
+			}
+		}
+	},
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "1897d013-8200-4c67-8531-6e5aecccbb7d",
+		"tenantId": "c0abf532-b3a2-4698-8a9b-b3682dc26908"
+	}
+}
